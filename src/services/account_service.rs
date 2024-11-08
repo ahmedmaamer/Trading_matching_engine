@@ -11,7 +11,24 @@ pub async fn create_account_in_db(account: &Account) -> Result<(), sqlx::Error> 
     // Generate a unique ID (UUID) for the account
     let account_id = Uuid::new_v4();
 
-    // Insert the new account into the database, ensuring that the full trader address is saved
+    // Check if an account with the same trader address already exists
+    let existing_account = sqlx::query!(
+        r#"
+        SELECT COUNT(*) as count
+        FROM accounts
+        WHERE trader_address = $1
+        "#,
+        format!("{:?}", account.trader_address) // Ensure the full address is checked
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    // If an account already exists, return an error
+    if existing_account.count.unwrap_or(0) > 0 {
+        return Err(sqlx::Error::RowNotFound); // Or create a custom error type
+    }
+
+    // Insert the new account into the database
     sqlx::query!(
         r#"
         INSERT INTO accounts (id, trader_address, ddx_balance, usd_balance)

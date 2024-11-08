@@ -17,12 +17,6 @@ mod db;
 mod models;
 
 
-async fn run_migrations(db_pool: &PgPool) {
-    sqlx::migrate!()
-        .run(db_pool)
-        .await
-        .expect("Failed to run migrations");
-}
 
 
 #[actix_web::main]
@@ -31,7 +25,6 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let db_pool = db::pool::create_pool().await.unwrap();
-    run_migrations(&db_pool).await;
 
     let app_state = web::Data::new(initialize_app_state(db_pool));
 
